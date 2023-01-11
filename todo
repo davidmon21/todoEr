@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+require './todoEr.rb'
+
+options = {:print => false, :type => "Daily", :time => 0, :date => nil, :file => "#{ENV["HOME"]}/.todo.json"}
+
+OptionParser.new do |opts|
+    opts.banner = "Usage: todo [options]"
+
+    opts.on("-f", "--file PATH", "json formated todo list") do |f|
+        options[:file] = f 
+    end
+
+    opts.on("-t", "--type [Daily|Due|Weekly|Check]", "Type of event") do |t|
+        options[:type] = t 
+    end
+
+    opts.on("-e", "--event \"Event\"", "Todo Event") do |e|
+        options[:event] = e 
+    end
+
+    opts.on("-d", "--date mm/dd/yyyy", "Todo Event Due Date") do |d|
+        options[:date] = d 
+    end
+
+    opts.on("-s", "--time hour", "Todo Event hour of day") do |s|
+        options[:time] = s 
+    end
+
+    opts.on("-p", "--print", "print todo") do |p|
+        options[:print] = true 
+    end
+
+    opts.on("-h", "--help", "Show this message") do
+        puts opts
+        exit
+    end
+end.parse!
+puts opts 
+todo_list = ToDo::ListHandle.new(options[:file])
+
+
+todo_list.print_list if options[:print]

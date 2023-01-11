@@ -16,7 +16,8 @@ module ToDo
         def update_items
             remove_items = []
             self.items.each do |item,states|
-                if states["type"] == "Daily"  
+                case states["type"]
+                when "Daily"  
                     if states["due"] < Time.now.to_i && states["completed"]
                         states["due"]+=24*60*60
                         states["completed"] = false
@@ -24,7 +25,15 @@ module ToDo
                         states["fail_count"]+=1 
                         states["due"]+=24*60*60
                     end
-                elsif states["type"] == "Due Date" 
+                when "Weekly"  
+                    if states["due"] < Time.now.to_i && states["completed"]
+                        states["due"]+=24*60*60*7
+                        states["completed"] = false
+                    elsif states["due"] < Time.now.to_i && !states["completed"]
+                        states["fail_count"]+=1 
+                        states["due"]+=24*60*60*7
+                    end
+                when "Due Date" 
                     if states["due"] < Time.now.to_i
                         if states["completed"]
                             remove_items.append item
@@ -54,15 +63,26 @@ module ToDo
                     self.items[todo]["due"] = Time.new(date.year,date.month,date.day+1,time).to_i
                     self.items[todo]["completed"] = false 
                     self.items[todo]["fail_count"] = 0
+                    self.items[todo]["success_count"] = 0
+                when "Weekly"
+                    date = Time.now
+                    self.items[todo]["type"] = type
+                    self.items[todo]["due"] = Time.new(date.year,date.month,date.day+1,time).to_i
+                    self.items[todo]["completed"] = false 
+                    self.items[todo]["fail_count"] = 0
+                    self.items[todo]["success_count"] = 0
                 when "Due Date" 
                     parts = due_date.split("/").map {|i| i.to_i}
                     self.items[todo]["type"] = type
                     self.items[todo]["due"] = Time.new(parts[0],parts[1],parts[2],time).to_i
                     self.items[todo]["completed"] = false
                     self.items[todo]["fail_count"] = 0
+                    self.items[todo]["success_count"] = 0
                 else 
                     self.items[todo]["type"] = "Undefined"
                     self.items[todo]["completed"] = false 
+                    self.items[todo]["fail_count"] = 0
+                    self.items[todo]["success_count"] = 0
                 end
                 self.commit_update
             end
@@ -71,6 +91,7 @@ module ToDo
         def mark_complete(todo)
             if self.items.has_key? todo 
                 self.items[todo]["completed"] = true 
+                self.items[todo]["success_count"]+=1
                 self.commit_update
             end
             self.update_items
@@ -79,9 +100,9 @@ module ToDo
             if self.items.has_key? todo
                 if self.items[todo]["fail_count"] > 0 && self.items[todo]["due"] > Time.now.to_i
                     self.items[todo]["fail_count"]-=1
+                    self.items[todo]["success_count"]+=1
                 end
             end
-            
         end
         def print_list
             self.update_items
@@ -89,6 +110,7 @@ module ToDo
                 puts item
                 puts "\t#{states["type"]}"
                 puts "\t#{Time.at(states["due"])}"
+                puts "\tSuccessfully completed #{states["success_count"]} times" if states["success_count"] > 0
                 puts "\tFailed to Complete #{states["fail_count"]} times" if states["fail_count"] > 0 
                 if states["completed"]
                     puts "\tCompleted ✔\n" 

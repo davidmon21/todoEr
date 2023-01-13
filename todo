@@ -3,9 +3,9 @@
 require 'optparse'
 require './todoEr.rb'
 
-options = {:print => false, :type => "Daily", :time => 0, :date => nil, :file => "#{ENV["HOME"]}/.todo.json"}
+options = {:file => "#{ENV["HOME"]}/.todo.json"}
 
-OptionParser.new do |opts|
+opts = OptionParser.new do |opts|
     opts.banner = "Usage: todo [options]"
 
     opts.on("-f", "--file PATH", "json formated todo list") do |f|
@@ -20,7 +20,7 @@ OptionParser.new do |opts|
         options[:event] = e 
     end
 
-    opts.on("-d", "--date mm/dd/yyyy", "Todo Event Due Date") do |d|
+    opts.on("-d", "--date yyyy/mm/dd", "Todo Event Due Date") do |d|
         options[:date] = d 
     end
 
@@ -36,9 +36,63 @@ OptionParser.new do |opts|
         puts opts
         exit
     end
-end.parse!
-puts opts 
+    opts.on("-a", "--add", "add event, define event with -e") do
+        options[:add] = true
+    end
+
+    opts.on("-c", "--mark-complete", "mark event as complete define event with -e") do
+        options[:complete] = true
+    end
+
+    opts.on("-l", "--mark-late-complete", "mark event as complete late define event with -e") do
+        options[:lcomplete] = true
+    end
+    
+end
+#puts opts 
+opts.parse!
+
+if options.length == 1
+    puts opts
+    exit
+end
+
 todo_list = ToDo::ListHandle.new(options[:file])
 
 
-todo_list.print_list if options[:print]
+if options.has_key? :print
+    todo_list.print_list
+end
+
+if options.has_key? :add 
+    if options.has_key? :event
+        if options.has_key? :type
+            type = options[:type]
+            if options.has_key? :date 
+                date = options[:date]
+            else
+                date = nil
+            end
+        else
+            type = "Daily"
+        end
+        if options.has_key? :time
+            time = options[:time].to_i 
+        else 
+            time = 0
+        end
+        todo_list.add_todo options[:event], time, type, date
+    else 
+        puts opts
+        exit
+    end
+end 
+
+if options.has_key? :complete
+    if options.has_key? :event 
+        todo_list.mark_complete options[:event]
+    else
+        puts  opts
+        exit
+    end
+end
